@@ -43,3 +43,5 @@ style:
     active: false
   UnusedPrivateProperty:
     allowedNames: '_|ignored|expected|serialVersionUID|.+Handler'
+  FunctionOnlyReturningConstant:
+    active: false

@@ -46,7 +46,7 @@ object ModuleVelocity : Module("Velocity", Category.COMBAT) {
 
     val modes = choices("Mode", { Modify }) {
         arrayOf(
-            Modify, Strafe, AAC442, Dexland, JumpReset
+            Modify, Strafe, AAC442, Dexland, JumpReset, Hypixel
         )
     }
 
@@ -146,6 +146,28 @@ object ModuleVelocity : Module("Velocity", Category.COMBAT) {
                 packet.playerVelocityX *= horizontal
                 packet.playerVelocityY *= vertical
                 packet.playerVelocityZ *= horizontal
+            }
+        }
+
+    }
+
+    private object Hypixel : Choice("Hypixel") {
+
+        override val parent: ChoiceConfigurable
+            get() = modes
+
+        val packetHandler = handler<PacketEvent> { event ->
+            val packet = event.packet
+
+            // Check if this is a regular velocity update
+            if (packet is EntityVelocityUpdateS2CPacket && packet.id == player.id) {
+                if (mc.player!!.isOnGround) {
+                    mc.player!!.velocity.y = packet.velocityY / 8000.0
+                }
+                event.cancelEvent()
+            } else if (packet is ExplosionS2CPacket) {
+                if (mc.player!!.isOnGround) mc.player!!.velocity.y = packet.playerVelocityY.toDouble()
+                event.cancelEvent()
             }
         }
 

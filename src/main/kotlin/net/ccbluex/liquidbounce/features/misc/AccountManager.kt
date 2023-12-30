@@ -22,6 +22,7 @@ package net.ccbluex.liquidbounce.features.misc
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.mojang.authlib.minecraft.MinecraftSessionService
+import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService
 import com.mojang.authlib.yggdrasil.YggdrasilEnvironment
 import com.mojang.authlib.yggdrasil.YggdrasilUserApiService
 import kotlinx.coroutines.GlobalScope
@@ -30,7 +31,9 @@ import net.ccbluex.liquidbounce.authlib.account.AlteningAccount
 import net.ccbluex.liquidbounce.authlib.account.CrackedAccount
 import net.ccbluex.liquidbounce.authlib.account.MicrosoftAccount
 import net.ccbluex.liquidbounce.authlib.account.MinecraftAccount
+import net.ccbluex.liquidbounce.authlib.compat.GameProfile
 import net.ccbluex.liquidbounce.authlib.utils.parseUuid
+import net.ccbluex.liquidbounce.authlib.yggdrasil.YggdrasilUserAuthentication
 import net.ccbluex.liquidbounce.authlib.yggdrasil.clientIdentifier
 import net.ccbluex.liquidbounce.config.ConfigSystem
 import net.ccbluex.liquidbounce.config.Configurable
@@ -47,14 +50,8 @@ import net.ccbluex.liquidbounce.utils.client.mc
 import net.ccbluex.liquidbounce.utils.io.HttpClient
 import net.minecraft.client.session.ProfileKeys
 import net.minecraft.client.session.Session
-import java.awt.Component
-import java.awt.HeadlessException
 import java.net.Proxy
-import java.net.URL
-import java.nio.file.Files
 import java.util.*
-import javax.swing.JDialog
-import javax.swing.JFileChooser
 
 object AccountManager : Configurable("Accounts"), Listenable {
 
@@ -190,7 +187,10 @@ object AccountManager : Configurable("Accounts"), Listenable {
             headers.add(Pair("connection", "keep-alive"))
 
             val playerStatsRaw: String =
-                HttpClient.request("https://api.minecraftservices.com/minecraft/profile", "GET", agent = "MojangSharp/0.1", headers = headers.toTypedArray())
+                HttpClient.request("https://api.minecraftservices.com/minecraft/profile",
+                    method = "GET",
+                    agent = "MojangSharp/0.1",
+                    headers = headers.toTypedArray())
             val playerStats: JsonObject = JsonParser.parseString(playerStatsRaw) as JsonObject
             val name: String = playerStats.get("name").asString
             val uuid: String = playerStats.get("id").asString
@@ -200,15 +200,41 @@ object AccountManager : Configurable("Accounts"), Listenable {
 
             // Set Session
             // val session = Session(name, uuid, token, "msa")
-            val session = Session(name, parseUuid(uuid), token, null, null, Session.AccountType.MOJANG)
-            mc.session = session
+            val profile = GameProfile(name, parseUuid(uuid))
+            val compatSession = profile.toSession(token, "mojang")
+            val service = YggdrasilAuthenticationService(Proxy.NO_PROXY, YggdrasilEnvironment.PROD.environment)
 
             // Login Successful
-            EventManager.callEvent(AltManagerUpdateEvent(true,
-                "Logged in! $name"))
+            val session = Session(
+                compatSession.username, compatSession.uuid, compatSession.token,
+                Optional.empty(),
+                Optional.of(clientIdentifier),
+                Session.AccountType.byName(compatSession.type)
+            )
+
+            var profileKeys = ProfileKeys.MISSING
+            runCatching {
+                // In this case the environment doesn't matter, as it is only used for the profile key
+                val environment = YggdrasilEnvironment.PROD.environment
+                val userAuthenticationService = YggdrasilUserApiService(
+                    session.accessToken,
+                    Proxy.NO_PROXY,
+                    environment
+                )
+                profileKeys = ProfileKeys.create(userAuthenticationService, session, mc.runDirectory.toPath())
+            }.onFailure {
+                logger.error("Failed to create profile keys for ${session.username} due to ${it.message}")
+            }
+
+            mc.session = session
+            mc.sessionService = service.createMinecraftSessionService()
+            mc.profileKeys = profileKeys
+
+            EventManager.callEvent(SessionEvent())
+            EventManager.callEvent(AltManagerUpdateEvent(true, "Logged in as $name"))
         } catch (e: Throwable) {
             EventManager.callEvent(AltManagerUpdateEvent(false, e.message ?: "Unknown error"))
-            e.printStackTrace()
+            // e.printStackTrace()
         }
     }
 

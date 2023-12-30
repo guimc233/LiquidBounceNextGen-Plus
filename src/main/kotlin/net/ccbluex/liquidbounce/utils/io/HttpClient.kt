@@ -22,7 +22,12 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.cert.CertificateException
+import java.security.cert.X509Certificate
 import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 object HttpClient {
 
@@ -41,6 +46,10 @@ object HttpClient {
         inputData: ByteArray? = null
     ): HttpURLConnection {
         val httpConnection = URL(url).openConnection() as HttpURLConnection
+
+        if (httpConnection is HttpsURLConnection) {
+            httpConnection.setHostnameVerifier { _, _ -> true }
+        }
 
         httpConnection.requestMethod = method
         httpConnection.connectTimeout = 2000 // 2 seconds until connect timeouts
@@ -69,6 +78,7 @@ object HttpClient {
         headers: Array<Pair<String, String>> = emptyArray(),
         inputData: ByteArray? = null
     ): String {
+        trustAllHttpsCertificates()
         val connection = make(url, method, agent, headers, inputData)
         val responseCode = connection.responseCode
 
@@ -94,5 +104,40 @@ object HttpClient {
             inputData = form.toByteArray())
 
     fun download(url: String, file: File) = FileOutputStream(file).use { make(url, "GET").inputStream.copyTo(it) }
+
+
+    @Throws(Exception::class)
+    private fun trustAllHttpsCertificates() {
+        val trustAllCerts = arrayOfNulls<TrustManager>(1)
+        val tm: TrustManager = miTM()
+        trustAllCerts[0] = tm
+        val sc = SSLContext.getInstance("SSL")
+        sc.init(null, trustAllCerts, null)
+        HttpsURLConnection.setDefaultSSLSocketFactory(sc.socketFactory)
+    }
+
+    internal class miTM : TrustManager, X509TrustManager {
+        override fun getAcceptedIssuers(): Array<X509Certificate>? {
+            return null
+        }
+
+        fun isServerTrusted(ignored: Array<X509Certificate?>?): Boolean {
+            return true
+        }
+
+        fun isClientTrusted(ignored: Array<X509Certificate?>?): Boolean {
+            return true
+        }
+
+        @Throws(CertificateException::class)
+        override fun checkServerTrusted(certs: Array<X509Certificate>, authType: String) {
+            return
+        }
+
+        @Throws(CertificateException::class)
+        override fun checkClientTrusted(certs: Array<X509Certificate>, authType: String) {
+            return
+        }
+    }
 
 }
