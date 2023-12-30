@@ -9,6 +9,7 @@
         newAlteningGen,
         newCrackedAccount,
         newMicrosoftAccount,
+        newTokenXGP,
         restoreInitialAccount
     } from "../../client/api.svelte";
     import { listen } from "../../client/ws.svelte";
@@ -128,6 +129,26 @@
             feedback(error, "red");
         });
 
+    }
+
+    let tokenxgp;
+
+    function chooseTokenXGP() {
+        const tokenxgpFileInput = document.getElementById("token-xgp-file")
+        tokenxgpFileInput.click()
+    }
+
+    function onTokenXGPInputChange() {
+        const tokenxgpFileInput = document.getElementById("token-xgp-file")
+        const selectedFile = tokenxgpFileInput.files[0];
+        if (selectedFile != null) {
+            const reader = new FileReader();
+            reader.addEventListener('load', (event) => {
+                newTokenXGP(event.target.result);
+                tokenxgpFileInput.value = "";
+            });
+            reader.readAsText(selectedFile);
+        }
     }
 
     function siteRestoreInitial() {
@@ -327,6 +348,10 @@
         #status {
             text-align: right;
         }
+
+        input#token-xgp-file {
+            display: none;
+        }
     </style>
 </head>
 <body transition:fade>
@@ -379,6 +404,10 @@
 
                 <button on:click={newMicrosoftAccount}>
                     Add
+                </button>
+                <input type="file" id="token-xgp-file" on:change={onTokenXGPInputChange}>
+                <button on:click={chooseTokenXGP}>
+                    TokenXGP
                 </button>
             </div>
             <div class="button">

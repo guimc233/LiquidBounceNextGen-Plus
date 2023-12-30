@@ -221,6 +221,22 @@
     }
 
     /**
+     * post("/accounts/new/tokenxgp") {
+     *         AccountManager.newTokenXGP()
+     *         httpOk(JsonObject())
+     *     }
+     */
+    export function newTokenXGP(token) {
+        return request("/accounts/new/tokenxgp", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ "token": token })
+        })
+    }
+
+    /**
      *         class AlteningForm(
      *             val token: String
      *         )

@@ -111,6 +111,16 @@ private fun RestNode.setupAccountManagerRest() {
         httpOk(JsonObject())
     }
 
+    post("/accounts/new/tokenxgp") {
+        class AccountForm(
+            val token: String
+        )
+
+        val accountForm = decode<AccountForm>(it.content)
+        AccountManager.newTokenXGP(accountForm.token)
+        httpOk(JsonObject())
+    }
+
     post("/accounts/new/altening") {
         class AlteningForm(
             val token: String

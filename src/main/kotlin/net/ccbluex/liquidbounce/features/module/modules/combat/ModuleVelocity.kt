@@ -123,6 +123,10 @@ object ModuleVelocity : Module("Velocity", Category.COMBAT) {
                 if (horizontal == 0f && vertical == 0f) {
                     event.cancelEvent()
                     return@handler
+                } else if (horizontal == 0f && vertical == 1f) {
+                    mc.player!!.velocity.y = packet.velocityY / 8000.0
+                    event.cancelEvent()
+                    return@handler
                 }
 
                 // Modify packet according to the specified values
