@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2015 - 2023 CCBlueX
+ * Copyright (c) 2015 - 2024 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with LiquidBounce. If not, see <https://www.gnu.org/licenses/>.
  */
-
 package net.ccbluex.liquidbounce.render.engine.font
 
 import net.ccbluex.liquidbounce.render.engine.UV2f
@@ -163,8 +162,8 @@ class GlyphPage(
             // Do the placement
             val atlasDimensions = doCharacterPlacement(glyphsToRender, suggestedAtlasWidth)
 
-            if (atlasDimensions.width > maxTextureSize || atlasDimensions.height > maxTextureSize) {
-                TODO("Implement multiple atlases.")
+            check(atlasDimensions.width <= maxTextureSize && atlasDimensions.height <= maxTextureSize) {
+                "Multiple atlases are not implemented yet."
             }
 
             val (atlas, fontMetrics) = renderAtlas(atlasDimensions, font, glyphsToRender)

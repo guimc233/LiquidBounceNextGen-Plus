@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2015 - 2023 CCBlueX
+ * Copyright (c) 2015 - 2024 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with LiquidBounce. If not, see <https://www.gnu.org/licenses/>.
  */
-
 package net.ccbluex.liquidbounce.features.module.modules.misc
 
 import net.ccbluex.liquidbounce.event.events.NotificationEvent
@@ -38,13 +37,13 @@ import java.util.*
  */
 object ModuleNotifier : Module("Notifier", Category.MISC) {
 
-    private val joinMessages by boolean("Join Messages", true)
-    private val joinMessageFormat by text("Join Message Format", "%s joined")
+    private val joinMessages by boolean("JoinMessages", true)
+    private val joinMessageFormat by text("JoinMessageFormat", "%s joined")
 
-    private val leaveMessages by boolean("Leave Messages", true)
-    private val leaveMessageFormat by text("Leave Message Format", "%s left")
+    private val leaveMessages by boolean("LeaveMessages", true)
+    private val leaveMessageFormat by text("LeaveMessageFormat", "%s left")
 
-    private val useNotification by boolean("Use Notification", false)
+    private val useNotification by boolean("UseNotification", false)
 
     private val uuidNameCache = hashMapOf<UUID, String>()
 

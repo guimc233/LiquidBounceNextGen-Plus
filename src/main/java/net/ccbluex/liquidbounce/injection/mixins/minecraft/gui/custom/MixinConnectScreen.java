@@ -2,7 +2,7 @@
  *
  *  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *  *
- *  * Copyright (c) 2015 - 2023 CCBlueX
+ *  * Copyright (c) 2015 - 2024 CCBlueX
  *  *
  *  * LiquidBounce is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -22,11 +22,15 @@
 package net.ccbluex.liquidbounce.injection.mixins.minecraft.gui.custom;
 
 import net.ccbluex.liquidbounce.api.IpInfoApi;
+import net.ccbluex.liquidbounce.event.EventManager;
+import net.ccbluex.liquidbounce.event.events.ServerConnectEvent;
+import net.ccbluex.liquidbounce.features.misc.HideAppearance;
 import net.ccbluex.liquidbounce.features.misc.ProxyManager;
 import net.ccbluex.liquidbounce.injection.mixins.minecraft.gui.MixinScreen;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.multiplayer.ConnectScreen;
+import net.minecraft.client.network.CookieStorage;
 import net.minecraft.client.network.ServerAddress;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.network.ClientConnection;
@@ -67,24 +71,25 @@ public abstract class MixinConnectScreen extends MixinScreen {
         var clientConnection = this.connection;
         var serverAddress = this.serverAddress;
         
-        if (clientConnection == null || this.serverAddress == null) {
+        if (clientConnection == null || this.serverAddress == null || HideAppearance.INSTANCE.isHidingNow()) {
             return;
         }
 
         var connectionDetails = getConnectionDetails(clientConnection, serverAddress);
         context.drawCenteredTextWithShadow(this.textRenderer, connectionDetails, this.width / 2,
-                this.height / 2 - 50, 0xFFFFFF);
+                this.height / 2 - 60, 0xFFFFFF);
     }
 
 
-    @Inject(method = "connect(Lnet/minecraft/client/MinecraftClient;Lnet/minecraft/client/network/ServerAddress;Lnet/minecraft/client/network/ServerInfo;)V", at = @At("HEAD"))
-    private void injectConnect(final MinecraftClient client, final ServerAddress address, @Nullable final ServerInfo info, final CallbackInfo callback) {
+    @Inject(method = "connect(Lnet/minecraft/client/MinecraftClient;Lnet/minecraft/client/network/ServerAddress;Lnet/minecraft/client/network/ServerInfo;Lnet/minecraft/client/network/CookieStorage;)V", at = @At("HEAD"))
+    private void injectConnect(MinecraftClient client, ServerAddress address, ServerInfo info, CookieStorage cookieStorage, CallbackInfo ci) {
         this.serverAddress = address;
+        EventManager.INSTANCE.callEvent(new ServerConnectEvent(info.name, info.address));
     }
 
     @ModifyConstant(method = "render", constant = @Constant(intValue = 50))
     private int modifyStatusY(int original) {
-        return original + 20;
+        return original + 30;
     }
 
     @Unique

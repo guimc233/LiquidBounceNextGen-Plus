@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2015 - 2023 CCBlueX
+ * Copyright (c) 2015 - 2024 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
  */
 package net.ccbluex.liquidbounce.injection.mixins.minecraft.render;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.ccbluex.liquidbounce.features.module.modules.render.ModuleCameraClip;
 import net.ccbluex.liquidbounce.features.module.modules.render.ModuleFreeCam;
 import net.ccbluex.liquidbounce.features.module.modules.render.ModuleQuickPerspectiveSwap;
@@ -67,12 +68,13 @@ public abstract class MixinCamera {
             return;
         }
 
-        AimPlan aimPlan = RotationManager.INSTANCE.getAimPlan();
+        AimPlan aimPlan = RotationManager.INSTANCE.getStoredAimPlan();
 
         var previousRotation = RotationManager.INSTANCE.getPreviousRotation();
         var currentRotation = RotationManager.INSTANCE.getCurrentRotation();
 
-        boolean shouldModifyRotation = ModuleRotations.INSTANCE.getEnabled() && ModuleRotations.INSTANCE.getPov() || aimPlan != null && aimPlan.getApplyClientSide();
+        boolean shouldModifyRotation = ModuleRotations.INSTANCE.getEnabled() && ModuleRotations.INSTANCE.getPov()
+                || aimPlan != null && aimPlan.getChangeLook();
 
         if (currentRotation == null || previousRotation == null || !shouldModifyRotation) {
             return;
@@ -86,7 +88,7 @@ public abstract class MixinCamera {
 
     @Inject(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/Camera;setPos(DDD)V", shift = At.Shift.AFTER))
     private void hookFreeCamModifiedPosition(BlockView area, Entity focusedEntity, boolean thirdPerson, boolean inverseView, float tickDelta, CallbackInfo ci) {
-        ModuleFreeCam.INSTANCE.applyPosition(focusedEntity, tickDelta);
+        ModuleFreeCam.INSTANCE.applyCameraPosition(focusedEntity, tickDelta);
     }
 
     @ModifyConstant(method = "clipToSpace", constant = @Constant(intValue = 8))
@@ -94,9 +96,8 @@ public abstract class MixinCamera {
         return ModuleCameraClip.INSTANCE.getEnabled() ? 0 : constant;
     }
 
-
-    @ModifyConstant(method = "update", constant = @Constant(doubleValue = 4.0))
-    private double modifyDesiredCameraDistance(double constant) {
-        return ModuleCameraClip.INSTANCE.getEnabled() ? ModuleCameraClip.INSTANCE.getDistance() : constant;
+    @ModifyExpressionValue(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/Camera;clipToSpace(D)D"))
+    private double modifyDesiredCameraDistance(double original) {
+        return ModuleCameraClip.INSTANCE.getEnabled() ? this.clipToSpace(ModuleCameraClip.INSTANCE.getDistance()) : original;
     }
 }

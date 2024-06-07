@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2015 - 2023 CCBlueX
+ * Copyright (c) 2015 - 2024 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,8 +32,4 @@ object ModuleReach : Module("Reach", Category.PLAYER) {
 
     val combatReach by float("CombatReach", 4.2f, 3f..8f)
     val blockReach by float("BlockReach", 5f, 4.5f..8f)
-
-    val maxReach: Float
-        get() = max(combatReach, blockReach)
-
 }

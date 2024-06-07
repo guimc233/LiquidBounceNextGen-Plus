@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2015 - 2023 CCBlueX
+ * Copyright (c) 2015 - 2024 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 package net.ccbluex.liquidbounce.event
 
 import net.ccbluex.liquidbounce.event.events.GameTickEvent
+import net.ccbluex.liquidbounce.features.misc.HideAppearance.isDestructed
 
 typealias Handler<T> = (T) -> Unit
 
@@ -34,7 +35,7 @@ interface Listenable {
     /**
      * Allows disabling event handling when condition is false.
      */
-    fun handleEvents(): Boolean = parent()?.handleEvents() ?: true
+    fun handleEvents(): Boolean = parent()?.handleEvents() ?: !isDestructed
 
     /**
      * Parent listenable
@@ -45,6 +46,18 @@ interface Listenable {
      * Children listenables
      */
     fun children(): List<Listenable> = emptyList()
+
+    /**
+     * Unregisters the event handler from the manager. This decision is FINAL!
+     * After the class was unregistered we cannot restore the handlers.
+     */
+    fun unregister() {
+        EventManager.unregisterEventHandler(this)
+
+        for (child in children()) {
+            child.unregister()
+        }
+    }
 
 }
 
@@ -71,7 +84,8 @@ inline fun <reified T : Event> Listenable.sequenceHandler(
  * Registers a repeatable sequence which repeats the execution of code.
  */
 fun Listenable.repeatable(eventHandler: SuspendableHandler<DummyEvent>) {
-    // We store our sequence in this variable. That can be done because our variable will survive the scope of this function
+    // We store our sequence in this variable.
+    // That can be done because our variable will survive the scope of this function
     // and can be used in the event handler function. This is a very useful pattern to use in Kotlin.
     var sequence: RepeatingSequence? = RepeatingSequence(this, eventHandler)
 

@@ -1,4 +1,23 @@
+/*
+ * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
+ *
+ * Copyright (c) 2015 - 2024 CCBlueX
+ *
+ * LiquidBounce is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * LiquidBounce is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with LiquidBounce. If not, see <https://www.gnu.org/licenses/>.
+ */
 @file:Suppress("Detekt.TooManyFunctions")
+
 package net.ccbluex.liquidbounce.utils.aiming
 
 import net.ccbluex.liquidbounce.features.module.modules.render.ModuleDebug
@@ -7,6 +26,8 @@ import net.ccbluex.liquidbounce.render.engine.Color4b
 import net.ccbluex.liquidbounce.utils.block.getState
 import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.client.mc
+import net.ccbluex.liquidbounce.utils.client.player
+import net.ccbluex.liquidbounce.utils.client.world
 import net.ccbluex.liquidbounce.utils.entity.getNearestPoint
 import net.ccbluex.liquidbounce.utils.kotlin.step
 import net.ccbluex.liquidbounce.utils.math.minus
@@ -29,7 +50,7 @@ fun raytraceBlock(
     wallsRange: Double,
 ): VecRotation? {
     val offset = Vec3d(pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble())
-    val shape = state.getOutlineShape(mc.world, pos, ShapeContext.of(mc.player))
+    val shape = state.getOutlineShape(world, pos, ShapeContext.of(player))
 
     for (box in shape.boundingBoxes.sortedBy { -(it.maxX - it.minX) * (it.maxY - it.minY) * (it.maxZ - it.minZ) }) {
         return raytraceBox(
@@ -37,6 +58,7 @@ fun raytraceBlock(
             box.offset(offset),
             range,
             wallsRange,
+            visibilityPredicate = BlockVisibilityPredicate(pos),
             rotationPreference = LeastDifferencePreference(RotationManager.makeRotation(pos.toCenterPos(), eyes))
         ) ?: continue
     }
@@ -372,10 +394,12 @@ private fun considerSpot(
     spot: Vec3d,
     bestRotationTracker: BestRotationTracker,
 ) {
-    val spotOnBox = box.raycast(eyes, (preferredSpot - eyes) * 2.0 + eyes).getOrNull() ?: return
+    // Elongate the line so we have no issues with fp-precision
+    val raycastTarget = (preferredSpot - eyes) * 2.0 + eyes
+    val spotOnBox = box.raycast(eyes, raycastTarget).getOrNull() ?: return
     val distance = eyes.squaredDistanceTo(spotOnBox)
 
-    val visible = visibilityPredicate.isVisible(eyes, spotOnBox)
+    val visible = visibilityPredicate.isVisible(eyes, raycastTarget)
 
     // Is either spot visible or distance within wall range?
     if ((!visible || distance >= rangeSquared) && distance >= wallsRangeSquared) {

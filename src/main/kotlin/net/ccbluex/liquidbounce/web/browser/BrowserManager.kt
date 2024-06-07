@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2015 - 2023 CCBlueX
+ * Copyright (c) 2015 - 2024 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,9 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with LiquidBounce. If not, see <https://www.gnu.org/licenses/>.
- *
  */
-
 package net.ccbluex.liquidbounce.web.browser
 
 import net.ccbluex.liquidbounce.config.Configurable
@@ -33,7 +31,7 @@ import net.ccbluex.liquidbounce.web.persistant.PersistentLocalStorage
 object BrowserManager : Configurable("browser") {
 
     private val DEFAULT_BROWSER_TYPE = BrowserType.JCEF
-    private val browserType by enumChoice("type", DEFAULT_BROWSER_TYPE, BrowserType.values())
+    private val browserType by enumChoice("type", DEFAULT_BROWSER_TYPE)
 
     /**
      * A browser exception. Used to indicate that something went wrong while using the browser.
@@ -46,9 +44,10 @@ object BrowserManager : Configurable("browser") {
     var browser: IBrowser? = null
         private set
 
-    @Suppress("UnusedPrivateProperty")
-    private val browserDrawer = BrowserDrawer { browser }
-    @Suppress("UnusedPrivateProperty")
+    @Suppress("unused")
+    val browserDrawer = BrowserDrawer { browser }
+
+    @Suppress("unused")
     private val browserInput = BrowserInput { browser }
 
     init {

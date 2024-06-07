@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2015 - 2023 CCBlueX
+ * Copyright (c) 2015 - 2024 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,8 @@ import net.minecraft.client.network.ClientPlayerEntity
 import net.minecraft.entity.Entity
 import net.minecraft.entity.effect.StatusEffect
 import net.minecraft.entity.effect.StatusEffects
+import net.minecraft.registry.RegistryKey
+import net.minecraft.registry.entry.RegistryEntry
 import net.minecraft.util.hit.HitResult
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Direction
@@ -33,9 +35,9 @@ import kotlin.math.sqrt
 
 class FallingPlayer(
     private val player: ClientPlayerEntity,
-    private var x: Double,
-    private var y: Double,
-    private var z: Double,
+    var x: Double,
+    var y: Double,
+    var z: Double,
     private var motionX: Double,
     private var motionY: Double,
     private var motionZ: Double,
@@ -118,7 +120,7 @@ class FallingPlayer(
         this.simulatedTicks++
     }
 
-    private fun hasStatusEffect(effect: StatusEffect): Boolean {
+    private fun hasStatusEffect(effect: RegistryEntry<StatusEffect>): Boolean {
         val instance = player.getStatusEffect(effect) ?: return false
 
         return instance.duration >= this.simulatedTicks
@@ -186,7 +188,9 @@ class FallingPlayer(
 
         return if (result != null && result.type == HitResult.Type.BLOCK && result.side == Direction.UP) {
             result.blockPos
-        } else null
+        } else {
+            null
+        }
     }
 
     class CollisionResult(val pos: BlockPos?, val tick: Int)

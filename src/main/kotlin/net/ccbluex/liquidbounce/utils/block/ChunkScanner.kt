@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2015 - 2023 CCBlueX
+ * Copyright (c) 2015 - 2024 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,16 +16,11 @@
  * You should have received a copy of the GNU General Public License
  * along with LiquidBounce. If not, see <https://www.gnu.org/licenses/>.
  */
-
 package net.ccbluex.liquidbounce.utils.block
 
 import net.ccbluex.liquidbounce.event.Listenable
-import net.ccbluex.liquidbounce.event.events.BlockChangeEvent
-import net.ccbluex.liquidbounce.event.events.ChunkLoadEvent
-import net.ccbluex.liquidbounce.event.events.ChunkUnloadEvent
-import net.ccbluex.liquidbounce.event.events.WorldDisconnectEvent
+import net.ccbluex.liquidbounce.event.events.*
 import net.ccbluex.liquidbounce.event.handler
-import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.client.logger
 import net.ccbluex.liquidbounce.utils.client.mc
 import net.minecraft.block.BlockState
@@ -39,6 +34,7 @@ object ChunkScanner : Listenable {
 
     private val loadedChunks = hashSetOf<ChunkLocation>()
 
+    @Suppress("unused")
     val chunkLoadHandler = handler<ChunkLoadEvent> { event ->
         val chunk = mc.world!!.getChunk(event.x, event.z)
 
@@ -47,12 +43,20 @@ object ChunkScanner : Listenable {
         this.loadedChunks.add(ChunkLocation(event.x, event.z))
     }
 
+    @Suppress("unused")
+    val chunkDeltaUpdateHandler = handler<ChunkDeltaUpdateEvent> { event ->
+        val chunk = mc.world!!.getChunk(event.x, event.z)
+        ChunkScannerThread.enqueueChunkUpdate(ChunkScannerThread.UpdateRequest.ChunkUpdateRequest(chunk))
+    }
+
+    @Suppress("unused")
     val chunkUnloadHandler = handler<ChunkUnloadEvent> { event ->
         ChunkScannerThread.enqueueChunkUpdate(ChunkScannerThread.UpdateRequest.ChunkUnloadRequest(event.x, event.z))
 
         this.loadedChunks.remove(ChunkLocation(event.x, event.z))
     }
 
+    @Suppress("unused")
     val blockChangeEvent = handler<BlockChangeEvent> { event ->
         ChunkScannerThread.enqueueChunkUpdate(
             ChunkScannerThread.UpdateRequest.BlockUpdateEvent(
@@ -62,7 +66,8 @@ object ChunkScanner : Listenable {
         )
     }
 
-    val disconnectHandler = handler<WorldDisconnectEvent> { event ->
+    @Suppress("unused")
+    val disconnectHandler = handler<DisconnectEvent> {
         synchronized(this) {
             this.subscriber.forEach(BlockChangeSubscriber::clearAllChunks)
         }
@@ -71,8 +76,8 @@ object ChunkScanner : Listenable {
     }
 
     fun subscribe(newSubscriber: BlockChangeSubscriber) {
-        if (this.subscriber.contains(newSubscriber)) {
-            throw IllegalStateException("Subscriber already registered")
+        check(!this.subscriber.contains(newSubscriber)) {
+            "Subscriber already registered"
         }
 
         this.subscriber.add(newSubscriber)
@@ -104,7 +109,7 @@ object ChunkScanner : Listenable {
     }
 
     object ChunkScannerThread {
-        val chunkUpdateQueue = ArrayBlockingQueue<UpdateRequest>(600)
+        private val chunkUpdateQueue = ArrayBlockingQueue<UpdateRequest>(600)
 
         private val thread = thread {
             while (true) {
